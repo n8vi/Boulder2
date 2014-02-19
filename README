@@ -1,0 +1,4 @@
+This is a pebble watchface that contains all four major US timezones, UTC,
+the date, a standard/daylight indicator, the UTC date, the Julian Day Number,
+Posix time, a battery indicator and a bluetooth connection indicator.  It 
+vibrates twice upon BT disconnect.
