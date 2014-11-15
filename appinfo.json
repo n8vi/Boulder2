@@ -1,18 +1,19 @@
 {
-    "versionLabel": "1.0",
-    "uuid": "02ba9060-8127-4975-ae47-925487627d95",
     "appKeys": {},
-    "longName": "Boulder",
-    "versionCode": 1,
     "capabilities": [
         ""
     ],
-    "shortName": "Boulder",
     "companyName": "n8vi",
-    "watchapp": {
-        "watchface": true
-    },
+    "longName": "Boulder",
+    "projectType": "native",
     "resources": {
         "media": []
+    },
+    "shortName": "Boulder",
+    "uuid": "02ba9060-8127-4975-ae47-925487627d95",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
     }
 }
