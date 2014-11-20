@@ -26,15 +26,17 @@ function get_tzname()
   return zname;
 }
 
-var d = new Date();
-
-Pebble.addEventListener('ready',
-  function(e)
-  {
+function updatePebble(e)
+{
     var transactionId = Pebble.sendAppMessage( 
 	                    { '0': d.getTimezoneOffset(), '1': get_tzname() },
                         function(e) { console.log('Success'); },
                         function(e) { console.log('Failure'); }
-	                    );
-  }
-);
+	                    );	
+}
+
+var d = new Date();
+
+Pebble.addEventListener('ready', updatePebble);
+Pebble.addEventListener('appmessage',updatePebble);
+

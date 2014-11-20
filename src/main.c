@@ -3,7 +3,7 @@
 #define SECONDS
 
 static int offset = 0;
-static char tzname[] = "UTC";
+static char tzname[] = "TZ?";
 	
 static char *dows[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 static char *mons[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -13,9 +13,13 @@ Window *window;
 TextLayer *text_date_layer;
 TextLayer *text_time_layer;
 TextLayer *text_UTC_layer;
+TextLayer *text_aux_layer;
 TextLayer *text_batt_layer;
 TextLayer *text_conn_layer;
 TextLayer *text_dst_layer;
+
+static char updstr[8] = "0";
+static unsigned int updcnt;
 
 bool isDst(void) /* sucks how the API doesn't work */
 {                /* need to find workaround */
@@ -133,6 +137,8 @@ void update_display(int now)
 	
   tm_local = timet_to_tm(now);
   snprintf(time_text, 6, "%.2d:%.2d", tm_local->tm_hour, tm_local->tm_min);
+  text_layer_set_text(text_time_layer, time_text);
+if (updcnt) {
   snprintf(date_text, 50, "%.2d:%.2d|%.2d:%.2d|%.2d:%.2d|%.2d:%.2d\n%s %d %s     %s",
 		                  (tm_local->tm_hour+21)%24, tm_local->tm_min, 
 		                  (tm_local->tm_hour+22)%24, tm_local->tm_min, 
@@ -141,7 +147,9 @@ void update_display(int now)
 		                  dows[tm_local->tm_wday], 
 		                  tm_local->tm_mday, mons[tm_local->tm_mon-1],
 		                  tzname);
+
   tm_utc   = timet_to_tm(gm_now);
+	
 #ifdef SECONDS
 
   snprintf(utc_text, 50," %.2d-%.2d-%.2d  JD%d\n%.2d:%.2d:%.2dz     %d", 
@@ -154,14 +162,19 @@ void update_display(int now)
   snprintf(utc_text, 24," %.2d-%.2d-%.2d %.2d:%.2d UT", tm_utc->tm_year,tm_utc->tm_mon, tm_utc->tm_mday,
                                           tm_utc->tm_hour,tm_utc->tm_min);
 #endif
-  text_layer_set_text(text_date_layer, date_text);
-  text_layer_set_text(text_time_layer, time_text);
   text_layer_set_text(text_UTC_layer, utc_text);
+  text_layer_set_text(text_date_layer, date_text);
+  // text_layer_set_text(text_aux_layer, updstr);
+  }
 }
 
 static void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
   time_t now = time(NULL);
   update_display(now);
+	
+  if (now % 3600 == 0) {
+    app_message_outbox_send();
+    }	
 }
 
 static void in_received_handler(DictionaryIterator *iter, void *context)
@@ -171,6 +184,8 @@ static void in_received_handler(DictionaryIterator *iter, void *context)
 	
   offset = (int)ofs->value->int32;
   strncpy(tzname, tzn->value->cstring, 4);	
+  updcnt++;
+  snprintf(updstr, 5, "%d", updcnt);
 }
 
 void appmessage_init(void)
@@ -194,7 +209,6 @@ void init()
   text_layer_set_background_color(text_date_layer, GColorClear);
   text_layer_set_font(text_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(text_date_layer, GTextAlignmentCenter);
-  text_layer_set_text(text_date_layer, "unix time");
   layer_add_child(root_layer, text_layer_get_layer(text_date_layer));	
 	
   // time
@@ -213,8 +227,17 @@ void init()
   text_layer_set_background_color(text_UTC_layer, GColorClear);
   text_layer_set_font(text_UTC_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(text_UTC_layer, GTextAlignmentCenter);
-  text_layer_set_text(text_UTC_layer, "unix time");
   layer_add_child(root_layer, text_layer_get_layer(text_UTC_layer));	
+
+  // 
+  text_aux_layer = text_layer_create(GRect(0, 142, frame.size.w, frame.size.h-142));
+  text_layer_set_text_color(text_aux_layer, GColorWhite);
+  text_layer_set_background_color(text_aux_layer, GColorClear);
+  text_layer_set_font(text_aux_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(text_aux_layer, GTextAlignmentCenter);
+  layer_add_child(root_layer, text_layer_get_layer(text_aux_layer));	
+	
+	
 	
   // Batt
   text_batt_layer = text_layer_create(GRect(10,142,frame.size.w/2, frame.size.h-142));
@@ -222,7 +245,6 @@ void init()
   text_layer_set_background_color(text_batt_layer, GColorClear);
   text_layer_set_font(text_batt_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(text_batt_layer, GTextAlignmentLeft);
-  text_layer_set_text(text_batt_layer, "Batt");
   layer_add_child(root_layer, text_layer_get_layer(text_batt_layer));	
 
 	  // Conn
@@ -231,7 +253,6 @@ void init()
   text_layer_set_background_color(text_conn_layer, GColorClear);
   text_layer_set_font(text_conn_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(text_conn_layer, GTextAlignmentRight);
-  text_layer_set_text(text_conn_layer, "Conn?");
   layer_add_child(root_layer, text_layer_get_layer(text_conn_layer));	
 
   update_display(time(NULL));
