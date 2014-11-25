@@ -18,7 +18,7 @@ TextLayer *text_batt_layer;
 TextLayer *text_conn_layer;
 TextLayer *text_dst_layer;
 
-static char updstr[8] = "0";
+static char tempstr[12] = "?";
 static unsigned int updcnt;
 
 bool isDst(void) /* sucks how the API doesn't work */
@@ -164,7 +164,7 @@ if (updcnt) {
 #endif
   text_layer_set_text(text_UTC_layer, utc_text);
   text_layer_set_text(text_date_layer, date_text);
-  // text_layer_set_text(text_aux_layer, updstr);
+  text_layer_set_text(text_aux_layer, tempstr);
   }
 }
 
@@ -181,11 +181,12 @@ static void in_received_handler(DictionaryIterator *iter, void *context)
 {
   Tuple *ofs = dict_find(iter, 0);
   Tuple *tzn = dict_find(iter, 1);
-	
+  Tuple *temp = dict_find(iter, 2);
+  	
   offset = (int)ofs->value->int32;
   strncpy(tzname, tzn->value->cstring, 4);	
   updcnt++;
-  snprintf(updstr, 5, "%d", updcnt);
+  strncpy(tempstr, temp->value->cstring, 10);
 }
 
 void appmessage_init(void)
